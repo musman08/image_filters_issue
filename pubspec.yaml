@@ -35,6 +35,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_image_filters: ^0.0.26
+  file_picker: ^10.1.2
+  path_provider: ^2.1.5
+  dropdown_button2: ^2.3.9
+  gal: ^2.3.1
+  path: ^1.9.1
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +61,7 @@ flutter:
 
   shaders:
     - shaders/white_balance_exposure_contrast_saturation.frag
+    - shaders/exposure_contrast_saturation_white_balance_hald_lookup.frag
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -64,6 +71,10 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/example.jpg
+    - assets/images/preset_images/cool.png
+    - assets/images/preset_images/drama.png
+    - assets/images/preset_images/warm.png
+    - assets/images/preset_images/waves.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

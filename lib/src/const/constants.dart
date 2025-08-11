@@ -1,0 +1,6 @@
+class AppImages {
+  static const String drama = 'assets/images/preset_images/drama.png';
+  static const String cool = 'assets/images/preset_images/cool.png';
+  static const String warm = 'assets/images/preset_images/warm.png';
+  static const String waves = 'assets/images/preset_images/waves.png';
+}

@@ -1,6 +1,16 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_filters/flutter_image_filters.dart';
+import 'package:gal/gal.dart';
 import 'package:image_filters/src/widgets/filter_widgets.dart';
+import 'package:image_filters/src/widgets/preset_dropdown_widget.dart';
+import 'package:image_filters/src/widgets/saved_file_preview.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'Utils/utils.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -14,7 +24,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late ShaderConfiguration configuration;
   late TextureSource textureSource;
-  bool isLoading = true;
+  bool isLoading = false;
+  String? filePath;
+
+  ImageFilter? filter;
 
   @override
   void dispose() {
@@ -25,15 +38,101 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    prepare();
+    // prepare();
   }
 
   Future<void> prepare() async {
+    isLoading = true;
+    setState(() {});
     configuration = BrightnessContrastShaderConfiguration();
     await configuration.prepare();
-    textureSource = await TextureSource.fromAsset('assets/images/example.jpg');
+    // textureSource = await TextureSource.fromAsset(filePath);
+    textureSource = await TextureSource.fromFile(
+      File(filePath ?? 'assets/images/example.jpg'),
+    );
     isLoading = false;
     setState(() {});
+  }
+
+  Future<void> applyLut(String? lookupPath) async {
+    final lookUpImageConfig =
+        ((configuration.parameters.where(
+          (e) => e.displayName == 'HALD LUT',
+        ))).first;
+    final intensityConfig =
+        ((configuration.parameters.where(
+          (e) => e.displayName == 'intensity',
+        ))).first;
+
+    if (lookUpImageConfig is ShaderTextureParameter) {
+      if (lookupPath == null) {
+        lookUpImageConfig.textureSource = null;
+      } else {
+        lookUpImageConfig.textureSource = await TextureSource.fromAsset(
+          lookupPath,
+        );
+      }
+    }
+
+    if (intensityConfig is ShaderRangeNumberParameter) {
+      if (lookupPath == null) {
+        intensityConfig.value = 0;
+      } else {
+        intensityConfig.value = 1;
+      }
+    }
+
+    ///
+    // final lookUpImageConfig = _getConfig(configuration, );
+    // final intensityConfig = _getConfig(configuration, 'intensity');
+    // if (lookUpImageConfig is ShaderTextureParameter) {
+    //   previousValue ??= lookUpImageConfig.file?.path;
+    //   newValue = value;
+    //   lookUpImageConfig.file = File(value);
+    //   // lookUpImageConfig.textureSource = null;
+    //   // if (value == null) {
+    //   //   lookUpImageConfig.textureSource = null;
+    //   // }
+    //   if (intensityConfig is ShaderRangeNumberParameter) {
+    //     if (previousIntensityValue == 1.0) {
+    //       previousIntensityValue = (Platform.isIOS ? 0 : 1);
+    //       // previousIntensityValue = 0;
+    //     }
+    //     // newIntensityValue = noPreset ? 0 : 0.99;
+    //     newIntensityValue = noPreset ? (Platform.isIOS ? 0 : 0.01) : 0.99;
+    //     // intensityConfig.value = noPreset ? 0 : 0.99;
+    //     intensityConfig.value = noPreset ? (Platform.isIOS ? 0 : 0.01) : 0.99;
+    //     print(
+    //       'previous value 5: ${intensityConfig.value} ${lookUpImageConfig.file?.path} ${previousIntensityValue} ${newIntensityValue}',
+    //     );
+    ///
+    await lookUpImageConfig.update(configuration);
+    await intensityConfig.update(configuration);
+  }
+
+  Future<void> pickFile() async {
+    final file = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.image,
+    );
+    if (file != null && file.paths.isNotEmpty) {
+      filePath = file.paths.first;
+      prepare();
+    }
+  }
+
+  Future<void> save() async {
+    final image = await configuration.export(textureSource, textureSource.size);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final pngBytes = byteData!.buffer.asUint8List();
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final fileName = '${timestamp}_thumbnail.png';
+    final tempDir = await getTemporaryDirectory();
+    final filePathTemp = '${tempDir.path}/${fileName}';
+    final file = File(filePathTemp);
+    await file.writeAsBytes(pngBytes);
+    SavedFilePreviewDialog(filePath: filePathTemp).show(context);
+    await Gal.putImageBytes(pngBytes, name: fileName);
   }
 
   @override
@@ -47,18 +146,43 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                height: 220,
-                child: ImageShaderPreview(
-                  texture: textureSource,
-                  configuration: configuration,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: pickFile,
+                    child: Text('Pick Image'),
+                  ),
+                  if (filePath?.isNotEmpty ?? false) ...[
+                    SizedBox(
+                      width: 100,
+                      child: ResolutionDropDownWidget(
+                        onChange: (v) {
+                          filter = v;
+                          applyLut(v?.path);
+                        },
+                        filter: filter,
+                      ),
+                    ),
+                    ElevatedButton(child: Text('Save'), onPressed: save),
+                  ],
+                ],
               ),
               SizedBox(height: 30),
-              ...configuration.children((cv) {
-                cv.update(configuration);
-                setState(() {});
-              }),
+              if (filePath?.isNotEmpty ?? false) ...[
+                SizedBox(
+                  height: 220,
+                  child: ImageShaderPreview(
+                    texture: textureSource,
+                    configuration: configuration,
+                  ),
+                ),
+                SizedBox(height: 30),
+                ...configuration.children((cv) {
+                  cv.update(configuration);
+                  setState(() {});
+                }),
+              ],
             ],
           ),
         );
@@ -70,11 +194,18 @@ class _MyHomePageState extends State<MyHomePage> {
 class BrightnessContrastShaderConfiguration extends BunchShaderConfiguration {
   BrightnessContrastShaderConfiguration()
     : super([
-        WhiteBalanceShaderConfiguration()
-          ..tint = 50
-          ..temperature = 0,
+        // WhiteBalanceShaderConfiguration()
+        //   ..tint = 50
+        //   ..temperature = 0,
+        // ExposureShaderConfiguration(),
+        // ContrastShaderConfiguration(),
+        // SaturationShaderConfiguration(),
         ExposureShaderConfiguration(),
         ContrastShaderConfiguration(),
         SaturationShaderConfiguration(),
+        WhiteBalanceShaderConfiguration()
+          ..tint = 50
+          ..temperature = 6500,
+        HALDLookupTableShaderConfiguration(),
       ]);
 }

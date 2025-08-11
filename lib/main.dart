@@ -6,7 +6,8 @@ import 'package:image_filters/src/filters_page.dart';
 void main() {
   FlutterImageFilters.register<BrightnessContrastShaderConfiguration>(
     () => FragmentProgram.fromAsset(
-      'shaders/white_balance_exposure_contrast_saturation.frag',
+      // 'shaders/white_balance_exposure_contrast_saturation.frag',
+      'shaders/exposure_contrast_saturation_white_balance_hald_lookup.frag',
     ),
   );
   runApp(const MyApp());
