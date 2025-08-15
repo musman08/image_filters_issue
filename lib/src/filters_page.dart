@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:developer';
 import 'dart:ui' as ui;
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,6 +11,7 @@ import 'package:image_filters/src/widgets/preset_dropdown_widget.dart';
 import 'package:image_filters/src/widgets/saved_file_preview.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../main.config.dart';
 import 'Utils/utils.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -38,18 +40,22 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    // prepare();
+    prepare();
   }
 
   Future<void> prepare() async {
+    print('lane 1 executed');
+    log('lane 1 executed');
     isLoading = true;
     setState(() {});
-    configuration = BrightnessContrastShaderConfiguration();
-    await configuration.prepare();
-    // textureSource = await TextureSource.fromAsset(filePath);
-    textureSource = await TextureSource.fromFile(
-      File(filePath ?? 'assets/images/example.jpg'),
+    filePath = 'assets/images/example2.jpg';
+    textureSource = await TextureSource.fromAsset(
+      filePath ?? 'assets/images/example.jpg',
     );
+    configuration = ExposureContrastSaturationWhiteBalanceHALDLookupShaderConfiguration();
+    // configuration = BrightnessContrastShaderConfiguration();
+    // await configuration.prepare();
+    // textureSource = await TextureSource.fromAsset(filePath);
     isLoading = false;
     setState(() {});
   }
@@ -123,16 +129,32 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> save() async {
     final image = await configuration.export(textureSource, textureSource.size);
+    print('lane 1 executed');
+    log('lane 1 executed');
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    print('lane 2 executed');
+    log('lane 2 executed');
     final pngBytes = byteData!.buffer.asUint8List();
+    print('lane 3 executed');
+    log('lane 3 executed');
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final fileName = '${timestamp}_thumbnail.png';
+    print('lane 4 executed');
+    log('lane 4 executed');
     final tempDir = await getTemporaryDirectory();
+    print('lane 5 executed');
+    log('lane 5 executed');
     final filePathTemp = '${tempDir.path}/${fileName}';
     final file = File(filePathTemp);
+    print('lane 6 executed');
+    log('lane 6 executed');
     await file.writeAsBytes(pngBytes);
-    SavedFilePreviewDialog(filePath: filePathTemp).show(context);
+    print('lane 7 executed');
+    log('lane 7 executed');
+    // SavedFilePreviewDialog(filePath: filePathTemp).show(context);
     await Gal.putImageBytes(pngBytes, name: fileName);
+    print('lane 8 executed');
+    log('lane 8 executed');
   }
 
   @override
@@ -140,52 +162,67 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       body: () {
         if (isLoading) return Center(child: CircularProgressIndicator());
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        if (filePath?.isNotEmpty ?? false){
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    onPressed: pickFile,
-                    child: Text('Pick Image'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // ElevatedButton(
+                      //   onPressed: pickFile,
+                      //   child: Text('Pick Image'),
+                      // ),
+                      SizedBox(
+                        width: 100,
+                        child: ResolutionDropDownWidget(
+                          onChange: (v) {
+                            filter = v;
+                            applyLut(v?.path);
+                          },
+                          filter: filter,
+                        ),
+                      ),
+                      ElevatedButton(child: Text('Save'), onPressed: save),
+                    ],
                   ),
+                  SizedBox(height: 30),
                   if (filePath?.isNotEmpty ?? false) ...[
+                    Text('Simple Image preview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),),
+                    SizedBox(height: 350,
+                      child: Image.asset(filePath!),
+                    ),
+                    SizedBox(height: 20),
+                    Text('Image Shader Preview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),),
                     SizedBox(
-                      width: 100,
-                      child: ResolutionDropDownWidget(
-                        onChange: (v) {
-                          filter = v;
-                          applyLut(v?.path);
-                        },
-                        filter: filter,
+                      height: 350,
+                      child: ImageShaderPreview(
+                        texture: textureSource,
+                        configuration: configuration,
                       ),
                     ),
-                    ElevatedButton(child: Text('Save'), onPressed: save),
+                    SizedBox(height: 30),
+                    ...configuration.children((cv) {
+                      cv.update(configuration);
+                      setState(() {});
+                    }),
                   ],
                 ],
               ),
-              SizedBox(height: 30),
-              if (filePath?.isNotEmpty ?? false) ...[
-                SizedBox(
-                  height: 220,
-                  child: ImageShaderPreview(
-                    texture: textureSource,
-                    configuration: configuration,
-                  ),
-                ),
-                SizedBox(height: 30),
-                ...configuration.children((cv) {
-                  cv.update(configuration);
-                  setState(() {});
-                }),
-              ],
-            ],
-          ),
-        );
+            ),
+          );
+        }else{
+          return Center(
+            child: ElevatedButton(
+              onPressed: pickFile,
+              child: Text('Pick Image'),
+            ),
+          );
+        }
       }(),
     );
   }
@@ -194,12 +231,6 @@ class _MyHomePageState extends State<MyHomePage> {
 class BrightnessContrastShaderConfiguration extends BunchShaderConfiguration {
   BrightnessContrastShaderConfiguration()
     : super([
-        // WhiteBalanceShaderConfiguration()
-        //   ..tint = 50
-        //   ..temperature = 0,
-        // ExposureShaderConfiguration(),
-        // ContrastShaderConfiguration(),
-        // SaturationShaderConfiguration(),
         ExposureShaderConfiguration(),
         ContrastShaderConfiguration(),
         SaturationShaderConfiguration(),

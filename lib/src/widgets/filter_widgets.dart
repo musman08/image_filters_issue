@@ -185,6 +185,10 @@ class SliderNumberParameterWidget extends StatelessWidget {
             },
           ),
         ),
+        Text(
+          parameter.value.toStringAsFixed(1),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
