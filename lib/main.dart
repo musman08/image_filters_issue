@@ -27,3 +27,8 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+//sRGB
+//R98-DCF sRGB
+//interop_version: 100
+//bits_per_sample: 8

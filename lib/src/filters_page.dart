@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ import 'package:image_filters/src/widgets/filter_widgets.dart';
 import 'package:image_filters/src/widgets/preset_dropdown_widget.dart';
 import 'package:image_filters/src/widgets/saved_file_preview.dart';
 import 'package:path_provider/path_provider.dart';
-
+import 'package:image/image.dart' as img;
 import 'Utils/utils.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -122,18 +123,81 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> save() async {
+    showDialog(
+      context: context,
+      builder:
+          (context) =>
+              Dialog(child: Center(child: CircularProgressIndicator())),
+    );
     final image = await configuration.export(textureSource, textureSource.size);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final pngBytes = byteData!.buffer.asUint8List();
+
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    final fileName = '${timestamp}_thumbnail.png';
+    // final fileName = '${timestamp}_thumbnail.png';
+    final fileName = '${timestamp}_thumbnail.jpg';
     final tempDir = await getTemporaryDirectory();
     final filePathTemp = '${tempDir.path}/${fileName}';
     final file = File(filePathTemp);
-    await file.writeAsBytes(pngBytes);
-    SavedFilePreviewDialog(filePath: filePathTemp).show(context);
-    await Gal.putImageBytes(pngBytes, name: fileName);
+    // await file.writeAsBytes(pngBytes);
+    ///
+    final img.Image? imageBytes = img.decodeImage(pngBytes);
+    if (imageBytes != null) {
+      final List<int> jpgBytes = img.encodeJpg(imageBytes);
+      // Create a new File for the JPG image
+      final File jpgFile = File(filePathTemp);
+
+      // Write the JPG bytes to the new file
+      await jpgFile.writeAsBytes(jpgBytes);
+      await Gal.putImage(filePathTemp);
+      Navigator.of(context).pop();
+      SavedFilePreviewDialog(filePath: filePathTemp).show(context);
+      // await Gal.putImageBytes(jpgBytes, name: fileName);
+
+      // jpgFile;
+    }
+
+    ///
+    // final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    // final fileName = '${timestamp}_thumbnail.png';
+    // final tempDir = await getTemporaryDirectory();
+    // final filePathTemp = '${tempDir.path}/${fileName}';
+    // final file = File(filePathTemp);
+    // await file.writeAsBytes(pngBytes);
+
+    // SavedFilePreviewDialog(filePath: filePathTemp).show(context);
+    // await Gal.putImageBytes(pngBytes, name: fileName);
   }
+
+  // Future<File?> convertPngToJpg(Uint8List pngBytes) async {
+  //   try {
+  //     // Read the PNG image bytes
+  //     // final List<int> pngBytes = await pngFile.readAsBytes();
+  //
+  //     // Decode the image
+  //     final img.Image? image = img.decodeImage(pngBytes);
+  //
+  //     if (image != null) {
+  //       // Encode the image as JPG
+  //       final List<int> jpgBytes = img.encodeJpg(image);
+  //
+  //       // Create a new File for the JPG image
+  //       final String jpgPath = pngFile.path.replaceAll('.png', '.jpg');
+  //       final File jpgFile = File(jpgPath);
+  //
+  //       // Write the JPG bytes to the new file
+  //       await jpgFile.writeAsBytes(jpgBytes);
+  //
+  //       return jpgFile;
+  //     } else {
+  //       print('Failed to decode PNG image.');
+  //       return null;
+  //     }
+  //   } catch (e) {
+  //     print('Error converting PNG to JPG: $e');
+  //     return null;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
