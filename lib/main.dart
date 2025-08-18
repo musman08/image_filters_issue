@@ -3,13 +3,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_filters/flutter_image_filters.dart';
 import 'package:image_filters/src/filters_page.dart';
 
-void main() {
-  FlutterImageFilters.register<BrightnessContrastShaderConfiguration>(
-    () => FragmentProgram.fromAsset(
-      // 'shaders/white_balance_exposure_contrast_saturation.frag',
-      'shaders/exposure_contrast_saturation_white_balance_hald_lookup.frag',
+import 'main.config.dart';
+
+
+
+@BunchShaderConfigs(
+  configs: [
+    BunchShaderConfig(
+      name: 'ExposureContrastSaturationWhiteBalanceHALDLookupShaderConfiguration',
+      shaders: [
+        ExposureShaderConfiguration,
+        ContrastShaderConfiguration,
+        SaturationShaderConfiguration,
+        WhiteBalanceShaderConfiguration,
+        HALDLookupTableShaderConfiguration,
+      ],
     ),
-  );
+  ],
+)
+void main() async{
+  registerBunchShaders();
+  WidgetsFlutterBinding.ensureInitialized();
+  await FlutterImageFilters.prepare();
   runApp(const MyApp());
 }
 
