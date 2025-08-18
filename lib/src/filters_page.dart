@@ -211,7 +211,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       body: () {
         if (isLoading) return Center(child: CircularProgressIndicator());
-        if (filePath?.isNotEmpty ?? false){
+        if (filePath?.isNotEmpty ?? false) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
             child: SingleChildScrollView(
@@ -241,12 +241,24 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   SizedBox(height: 30),
                   if (filePath?.isNotEmpty ?? false) ...[
-                    Text('Simple Image preview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),),
-                    SizedBox(height: 350,
-                      child: Image.asset(filePath!),
+                    Text(
+                      'Simple Image preview',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
+                    SizedBox(height: 350, child: Image.asset(filePath!)),
                     SizedBox(height: 20),
-                    Text('Image Shader Preview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),),
+                    Text(
+                      'Image Shader Preview',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
                     SizedBox(
                       height: 350,
                       child: ImageShaderPreview(
@@ -264,7 +276,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           );
-        }else{
+        } else {
           return Center(
             child: ElevatedButton(
               onPressed: pickFile,
