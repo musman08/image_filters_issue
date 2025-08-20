@@ -16,12 +16,17 @@ class SavedFilePreviewDialog extends StatelessWidget {
     return Dialog(
       child: Column(
         children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: IconButton(
-              onPressed: Navigator.of(context).pop,
-              icon: Icon(Icons.close),
-            ),
+          Padding(padding: EdgeInsets.only(left: 15),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Exported Image preview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),),
+              IconButton(
+                onPressed: Navigator.of(context).pop,
+                icon: Icon(Icons.close),
+              ),
+            ],
+          ),
           ),
           Image.file(File(filePath)),
         ],

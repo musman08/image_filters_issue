@@ -74,6 +74,7 @@ flutter:
   assets:
     - assets/images/example.jpg
     - assets/images/example2.jpg
+    - assets/images/example3.PNG
     - assets/images/preset_images/cool.png
     - assets/images/preset_images/drama.png
     - assets/images/preset_images/warm.png
