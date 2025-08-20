@@ -10,3 +10,13 @@ enum ImageFilter {
   final String path;
   const ImageFilter(this.name, this.path);
 }
+
+enum ExampleImage {
+  example3('Color Issue after export', AppExampleImages.example3),
+  example2('Unwanted sharpness', AppExampleImages.example2),
+  example('Sample Image', AppExampleImages.example);
+
+  final String name;
+  final String path;
+  const ExampleImage(this.name, this.path);
+}
