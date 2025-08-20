@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:developer';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
+import 'package:image_filters/src/const/constants.dart';
+import 'package:image_filters/src/widgets/image_dropdown_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -30,8 +32,9 @@ class _MyHomePageState extends State<MyHomePage> {
   late TextureSource textureSource;
   bool isLoading = false;
   String? filePath;
-
+  ImageType? fileType;
   ImageFilter? filter;
+  ExampleImage? image;
 
   @override
   void dispose() {
@@ -42,6 +45,9 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    fileType = ImageType.asset;
+    image = ExampleImage.values.first;
+    filePath = image!.path;
     prepare();
   }
 
@@ -50,10 +56,16 @@ class _MyHomePageState extends State<MyHomePage> {
     log('lane 1 executed');
     isLoading = true;
     setState(() {});
-    filePath = 'assets/images/example2.jpg';
-    textureSource = await TextureSource.fromAsset(
-      filePath ?? 'assets/images/example.jpg',
-    );
+    if(fileType == ImageType.asset){
+      log('lane 2 executed');
+      textureSource = await TextureSource.fromAsset(image!.path);
+      log('lane 3 executed');
+    }else{
+      log('lane 6 executed');
+      textureSource = await TextureSource.fromFile(File(filePath ?? ''));
+    }
+    // filePath = 'assets/images/example2.jpg';
+    log('lane 4 executed');
     configuration =
         ExposureContrastSaturationWhiteBalanceHALDLookupShaderConfiguration();
     // configuration = BrightnessContrastShaderConfiguration();
@@ -126,6 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     if (file != null && file.paths.isNotEmpty) {
       filePath = file.paths.first;
+      fileType = ImageType.file;
       prepare();
     }
   }
@@ -141,28 +154,23 @@ class _MyHomePageState extends State<MyHomePage> {
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final pngBytes = byteData!.buffer.asUint8List();
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    // final fileName = '${timestamp}_thumbnail.png';
-    final fileName = '${timestamp}_thumbnail.jpg';
+    final fileName = '${timestamp}_thumbnail.png';
+    // final fileName = '${timestamp}_thumbnail.jpg';
     final tempDir = await getTemporaryDirectory();
     final filePathTemp = '${tempDir.path}/${fileName}';
     final file = File(filePathTemp);
-    // await file.writeAsBytes(pngBytes);
+    await file.writeAsBytes(pngBytes);
     ///
-    final img.Image? imageBytes = img.decodeImage(pngBytes);
-    if (imageBytes != null) {
-      final List<int> jpgBytes = img.encodeJpg(imageBytes);
-      // Create a new File for the JPG image
-      final File jpgFile = File(filePathTemp);
+    // final img.Image? imageBytes = img.decodeImage(pngBytes);
+    // if (imageBytes != null) {
+    //   final List<int> jpgBytes = img.encodeJpg(imageBytes);
+    //   final File jpgFile = File(filePathTemp);
+    //   await jpgFile.writeAsBytes(jpgBytes);
+    // }
 
-      // Write the JPG bytes to the new file
-      await jpgFile.writeAsBytes(jpgBytes);
-      await Gal.putImage(filePathTemp);
-      Navigator.of(context).pop();
-      SavedFilePreviewDialog(filePath: filePathTemp).show(context);
-      // await Gal.putImageBytes(jpgBytes, name: fileName);
-
-      // jpgFile;
-    }
+    await Gal.putImage(filePathTemp);
+    Navigator.of(context).pop();
+    SavedFilePreviewDialog(filePath: filePathTemp).show(context);
 
     ///
     // final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
@@ -208,6 +216,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    log('filepath here: ${filePath}');
     return Scaffold(
       body: () {
         if (isLoading) return Center(child: CircularProgressIndicator());
@@ -226,14 +235,25 @@ class _MyHomePageState extends State<MyHomePage> {
                       //   onPressed: pickFile,
                       //   child: Text('Pick Image'),
                       // ),
-                      SizedBox(
-                        width: 100,
+                      Expanded(
                         child: ResolutionDropDownWidget(
                           onChange: (v) {
                             filter = v;
                             applyLut(v?.path);
                           },
                           filter: filter,
+                        ),
+                      ),
+                      Expanded(
+                        child: ImageDropDownWidget(
+                          onChange: (v) {
+                            if(v ==null) return;
+                            image = v;
+                            filePath = image!.path;
+                            fileType = ImageType.asset;
+                            prepare();
+                          },
+                          exampleImage: image,
                         ),
                       ),
                       ElevatedButton(child: Text('Save'), onPressed: save),
@@ -249,7 +269,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         color: Colors.black,
                       ),
                     ),
-                    SizedBox(height: 350, child: Image.asset(filePath!)),
+                    if(fileType == ImageType.asset)...[
+                      SizedBox(height: 350, child: Image.asset(filePath!)),
+                    ]else...[
+                      SizedBox(height: 350, child: Image.file(File(filePath!))),
+                    ],
                     SizedBox(height: 20),
                     Text(
                       'Image Shader Preview',
@@ -285,6 +309,9 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         }
       }(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: pickFile,
+        child: Icon(Icons.file_upload),),
     );
   }
 }
@@ -300,4 +327,9 @@ class BrightnessContrastShaderConfiguration extends BunchShaderConfiguration {
           ..temperature = 6500,
         HALDLookupTableShaderConfiguration(),
       ]);
+}
+
+enum ImageType{
+  asset,
+  file
 }
