@@ -234,13 +234,13 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               SizedBox(height: 30),
               if (filePath?.isNotEmpty ?? false) ...[
-                SizedBox(
-                  height: 220,
-                  child: ImageShaderPreview(
-                    texture: textureSource,
-                    configuration: configuration,
-                  ),
-                ),
+                // SizedBox(
+                //   height: 220,
+                //   child: ImageShaderPreview(
+                //     texture: textureSource,
+                //     configuration: configuration,
+                //   ),
+                // ),
                 SizedBox(height: 30),
                 ...configuration.children((cv) {
                   cv.update(configuration);
